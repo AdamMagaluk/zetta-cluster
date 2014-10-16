@@ -9,7 +9,7 @@ Crate a cluster of zetta instances using in memory registry.
 ## Usage
 
 ```js
-var cluster = require('../cluster');
+var cluster = require('zetta-cluster');
 var SineWave = require('zetta-sine-wave');
 var LED = require('zetta-mock-led');
 
