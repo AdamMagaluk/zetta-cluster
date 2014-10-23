@@ -1,6 +1,7 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var url = require('url');
+var openport = require('openport');
 var async = require('async');
 var zetta = require('zetta');
 var MemRegistry = require('./mem_registry');
@@ -14,7 +15,7 @@ var ZettaTest = function(opts) {
   EventEmitter.call(this);
 
   opts = opts || {};
-  this.startPort = opts.startPort || Math.floor(2000 + Math.random() * 1000);
+  this.startPort = opts.startPort;
   this._nextPort = this.startPort;
   this.servers = {};
   this.RegType = opts.Registry || MemRegistry;
@@ -50,10 +51,31 @@ ZettaTest.prototype.server = function(name, scouts, peers) {
   };
  
   server._testPeers = peers || [];
-  server._testPort = this._nextPort++;
+//  server._testPort = this._nextPort++;
   this.servers[name] = server;
   return this;
 };
+
+ZettaTest.prototype.assignPorts = function(cb) {
+  var self = this;
+  var obj = { count: Object.keys(this.servers).length };
+  if (this.startPort) {
+    obj.startingPort = this.startPort;
+  }
+
+  openport.find(obj, function(err, ports) {
+    if (err) {
+      return cb(err);
+    }
+    
+    Object.keys(self.servers).forEach(function(key, i) {
+      self.servers[key]._testPort = ports[i];
+    });
+    
+    cb();
+  });
+};
+
 
 ZettaTest.prototype.stop = function(callback) {
   var self = this;
@@ -65,29 +87,38 @@ ZettaTest.prototype.stop = function(callback) {
 
 ZettaTest.prototype.run = function(callback) {
   var self = this;
-  Object.keys(this.servers).forEach(function(key) {
-    var server = self.servers[key];
-    server._testPeers.forEach(function(peerName) {
-      if (!self.servers[peerName]) {
-        return;
-      }
 
-      var url = 'http://localhost:' + self.servers[peerName]._testPort;
-      self.emit('log', 'Server [' + key + '] Linking to ' + url);
-      self._serversUrl[url] = self.servers[peerName];
-      server.link(url);
+  this.assignPorts(function(err) {
+    if (err) {
+      return callback(err);
+    }
+
+    Object.keys(self.servers).forEach(function(key) {
+      var server = self.servers[key];
+      server._testPeers.forEach(function(peerName) {
+        if (!self.servers[peerName]) {
+          return;
+        }
+
+        var url = 'http://localhost:' + self.servers[peerName]._testPort;
+        self.emit('log', 'Server [' + key + '] Linking to ' + url);
+        self._serversUrl[url] = self.servers[peerName];
+        server.link(url);
+      });
     });
+
+    async.each( Object.keys(self.servers), function(name, next) {
+      var server = self.servers[name];
+      self.emit('log', 'Server [' + name + '] Started on port ' + server._testPort);
+      server.listen(server._testPort, next);
+    }, callback);
+
+    self.waitForAllPeerConnections(function() {
+      self.emit('ready');
+    });
+    
   });
 
-  async.each( Object.keys(this.servers), function(name, next) {
-    var server = self.servers[name];
-    self.emit('log', 'Server [' + name + '] Started on port ' + server._testPort);
-    server.listen(server._testPort, next);
-  }, callback);
-
-  self.waitForAllPeerConnections(function() {
-    self.emit('ready');
-  });
 
   return this;
 };

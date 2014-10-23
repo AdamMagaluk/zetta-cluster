@@ -10,9 +10,8 @@
     "async": "^0.9.0",
     "levelup": "^0.19.0",
     "memdown": "^0.10.2",
-    "zetta": "^0.13.0",
-    "zetta-mock-led": "^0.4.0",
-    "zetta-sine-wave": "^0.2.0"
+    "openport": "0.0.3",
+    "zetta": "^0.13.0"
   },
   "devDependencies": {},
   "scripts": {
