@@ -95,14 +95,20 @@ ZettaTest.prototype.run = function(callback) {
 
     Object.keys(self.servers).forEach(function(key) {
       var server = self.servers[key];
-      server._testPeers.forEach(function(peerName) {
-        if (!self.servers[peerName]) {
-          return;
+      server._testPeers.forEach(function(peerName) {        
+        var url = null;
+        if (peerName.indexOf('http') > -1) {
+          url = peerName;
+        } else {
+          if (!self.servers[peerName]) {
+            return;
+          }
+
+          url = 'http://localhost:' + self.servers[peerName]._testPort;
+          self._serversUrl[url] = self.servers[peerName];
         }
 
-        var url = 'http://localhost:' + self.servers[peerName]._testPort;
         self.emit('log', 'Server [' + key + '] Linking to ' + url);
-        self._serversUrl[url] = self.servers[peerName];
         server.link(url);
       });
     });
