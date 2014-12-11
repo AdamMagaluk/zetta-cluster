@@ -1,11 +1,10 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var url = require('url');
-var openport = require('openport');
 var async = require('async');
-var zetta = require('zetta');
 var MemRegistry = require('./mem_registry');
 var MemPeerRegistry = require('./mem_peer_registry');
+var portscanner = require('./portscanner');
 
 module.exports = function(opts) {
   return new ZettaTest(opts);
@@ -15,6 +14,9 @@ var ZettaTest = function(opts) {
   EventEmitter.call(this);
 
   opts = opts || {};
+
+  this.zetta = opts.zetta || require('zetta');
+
   this.startPort = opts.startPort;
   this._nextPort = this.startPort;
   this.servers = {};
@@ -37,7 +39,7 @@ ZettaTest.prototype.peerRegistry = function(Type) {
 ZettaTest.prototype.server = function(name, scouts, peers) {
   var reg = new this.RegType();
   var peerRegistry = new this.PeerRegType();
-  var server = zetta({ registry: reg, peerRegistry: peerRegistry });
+  var server = this.zetta({ registry: reg, peerRegistry: peerRegistry });
   server.name(name);
 
   if (scouts) {
@@ -62,12 +64,16 @@ ZettaTest.prototype.assignPorts = function(cb) {
   if (this.startPort) {
     obj.startingPort = this.startPort;
   }
-
-  openport.find(obj, function(err, ports) {
+  
+  portscanner(obj, function(err, ports) {
     if (err) {
       return cb(err);
     }
     
+    if (typeof ports === 'number') {
+      ports = [ports];
+    }
+
     Object.keys(self.servers).forEach(function(key, i) {
       self.servers[key]._testPort = ports[i];
     });
@@ -92,7 +98,7 @@ ZettaTest.prototype.run = function(callback) {
     if (err) {
       return callback(err);
     }
-
+    
     Object.keys(self.servers).forEach(function(key) {
       var server = self.servers[key];
       server._testPeers.forEach(function(peerName) {        
@@ -113,15 +119,15 @@ ZettaTest.prototype.run = function(callback) {
       });
     });
 
+    self.waitForAllPeerConnections(function() {
+      self.emit('ready');
+    });
+
     async.each( Object.keys(self.servers), function(name, next) {
       var server = self.servers[name];
       self.emit('log', 'Server [' + name + '] Started on port ' + server._testPort);
       server.listen(server._testPort, next);
     }, callback);
-
-    self.waitForAllPeerConnections(function() {
-      self.emit('ready');
-    });
     
   });
 
@@ -148,8 +154,13 @@ ZettaTest.prototype.peersConnected = function(server, callback) {
     if (!data.peer.url) {
       return;
     }
-    var idx = server._peers.indexOf('http://' + url.parse(data.peer.url).host);
-    if (idx > -1) {
+
+    var p = server._peers.filter(function(peer) {
+      var pObj = url.parse(peer);
+      return (url.parse(peer).host === url.parse(data.peer.url).host);
+    });
+
+    if (p.length > 0) {
       length--;
       if (length === 0) {
         callback();
