@@ -98,6 +98,8 @@ ZettaTest.prototype.run = function(callback) {
     if (err) {
       return callback(err);
     }
+
+    self.emit('portsassigned');
     
     Object.keys(self.servers).forEach(function(key) {
       var server = self.servers[key];
