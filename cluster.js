@@ -72,6 +72,7 @@ ZettaTest.prototype.run = function(callback) {
       }
     });
   });
+  return this;
 };
 
 ZettaTest.prototype.linkServers = function(callback) {
