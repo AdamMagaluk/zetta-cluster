@@ -1,5 +1,6 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
+var http = require('http');
 var url = require('url');
 var async = require('async');
 
@@ -124,6 +125,7 @@ ZettaTest.prototype.waitForAllPeerConnections = function(callback) {
 };
 
 ZettaTest.prototype.peersConnected = function(server, callback) {
+  var self = this;
   var length = server._testPeers.length;
   if (length === 0) {
     return callback();
@@ -138,13 +140,41 @@ ZettaTest.prototype.peersConnected = function(server, callback) {
       var pObj = url.parse(peer);
       return (url.parse(peer).host === url.parse(data.peer.url).host);
     });
-
-    if (p.length > 0) {
-      length--;
-      if (length === 0) {
-        setTimeout(callback, 10);
-      }
+    
+    if (p.length === 0) {
+      return;
     }
+    
+    var found = false;
+    async.whilst(
+      function () { return !found; },
+      function (next) {
+        self._checkExternalConnection(server, p[0], function(err) {
+          if (!err) {
+            found = true;
+          }
+          setTimeout(next, ((err) ? 5 : 0) );
+        });
+      },
+      function (err) {
+        if (p.length > 0) {
+          length--;
+          if (length === 0) {
+            callback();
+          }
+        }
+      }
+    );
   });
 
+};
+
+ZettaTest.prototype._checkExternalConnection = function(server, peerUrl, callback) {
+  var r = http.get(peerUrl + '/servers/' + encodeURI(server.id), function(res) {
+    res.on('data', function() {});
+    if (res.statusCode !== 200) {
+      return callback(new Error('Not status code 200'));
+    }
+    callback();
+  }).on('error', callback);
 };
