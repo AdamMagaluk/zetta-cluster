@@ -39,7 +39,7 @@ ZettaTest.prototype.server = function(name, scouts, peers) {
   }
 
   server.locatePeer = function(id) {
-    return id;
+    return encodeURI(id);
   };
  
   server._testPeers = peers || [];
@@ -142,7 +142,7 @@ ZettaTest.prototype.peersConnected = function(server, callback) {
     if (p.length > 0) {
       length--;
       if (length === 0) {
-        callback();
+        setTimeout(callback, 10);
       }
     }
   });
