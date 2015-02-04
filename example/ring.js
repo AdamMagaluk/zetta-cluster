@@ -1,8 +1,9 @@
+var zetta = require('zetta');
 var cluster = require('../cluster');
 var SineWave = require('zetta-sine-wave');
 var LED = require('zetta-mock-led');
 
-cluster({ startPort: 20000 })
+cluster({ zetta: zetta })
   .server('cloud', [SineWave, LED], ['bangalore'])
   .server('detroit', [SineWave, LED], ['cloud'])
   .server('san jose', [SineWave, LED], ['detroit'])

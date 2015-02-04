@@ -1,11 +1,14 @@
 var util = require('util');
 var levelup = require('levelup');
 var memdown = require('memdown');
-var PeerRegistry = require('zetta/lib/peer_registry');
 
-var MemPeerRegistry = module.exports = function() {
-  var db = levelup({ db: memdown });
-  PeerRegistry.call(this, db);
+module.exports = function(zetta) {
+  var PeerRegistry = zetta.PeerRegistry;
+  var MemPeerRegistry = function() {
+    var db = levelup({ db: memdown });
+    PeerRegistry.call(this, { db: db, collection: 'peers' });
+  }
+  util.inherits(MemPeerRegistry, PeerRegistry);
+  return MemPeerRegistry;
 }
-util.inherits(MemPeerRegistry, PeerRegistry);
 

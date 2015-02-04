@@ -1,10 +1,11 @@
+var zetta = require('zetta');
 var cluster = require('../cluster');
 var SineWave = require('zetta-sine-wave');
 var LED = require('zetta-mock-led');
 
 var servers = ['cloud', 'detroit', 'san jose', 'london', 'bangalore'];
 
-var c = cluster({ startPort: 20000 });
+var c = cluster({ zetta: zetta });
 
 servers.forEach(function(server, idx) {
   servers.splice(idx, 1);

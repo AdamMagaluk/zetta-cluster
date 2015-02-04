@@ -10,10 +10,11 @@ Crate a cluster of zetta instances using in memory registry.
 
 ```js
 var cluster = require('zetta-cluster');
+var zetta = require('zetta');
 var SineWave = require('zetta-sine-wave');
 var LED = require('zetta-mock-led');
 
-cluster()
+cluster({ zetta: zetta })
   .server('cloud')
   .server('detroit', [SineWave, LED], ['cloud'])
   .server('san jose', [SineWave, LED], ['cloud'])
