@@ -3,6 +3,7 @@ var EventEmitter = require('events').EventEmitter;
 var http = require('http');
 var url = require('url');
 var async = require('async');
+var MemoryRegistriesInit = require('zetta-memory-registry');
 
 module.exports = function(opts) {
   return new ZettaTest(opts);
@@ -17,9 +18,9 @@ var ZettaTest = function(opts) {
   if (!this.zetta || !this.zetta.PeerRegistry || !this.zetta.DeviceRegistry) {
     throw new Error('Must pass in zetta as an option, zetta >= 0.19.0');
   }
-
-  this.DeviceRegistry = require('./mem_device_registry')(this.zetta);
-  this.PeerRegistry = require('./mem_peer_registry')(this.zetta);
+  var MemoryRegistries = MemoryRegistriesInit(this.zetta);
+  this.DeviceRegistry = MemoryRegistries.DeviceRegistry;
+  this.PeerRegistry = MemoryRegistries.PeerRegistry;
 
   this.startPort = opts.startPort;
   this._nextPort = this.startPort;
